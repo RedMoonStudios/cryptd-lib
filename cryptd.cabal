@@ -38,6 +38,7 @@ Library
         Cryptd.Lib.Tunnel
         Cryptd.Lib.Callbacks
         Cryptd.Lib.Daemonize
+        Cryptd.Lib.ConfigEmbed
     Build-depends:
         base < 5,
         stm,
@@ -54,6 +55,7 @@ Library
         derive,
         cereal,
         bytestring,
+        file-embed,
         blaze-builder,
         HTTP,
         http-types,
