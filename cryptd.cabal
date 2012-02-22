@@ -31,7 +31,7 @@ Source-repository head
     Location:        git@github.com:RedMoonStudios/cryptd.git
 
 Library
-    Ghc-options:     -Wall -Werror
+    Ghc-options:     -Wall
     Exposed-modules:
         Cryptd.Lib.HTTP
         Cryptd.Lib.HTTPSerial
