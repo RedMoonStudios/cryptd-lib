@@ -1,6 +1,6 @@
 Name:                cryptd
 Version:             0.1
-Synopsis:            MoonID encryption daemon
+Synopsis:            MoonID encryption daemon (library)
 Homepage:            https://github.com/RedMoonStudios/cryptd
 License:             AllRightsReserved
 Author:              RedMoon Studios GmbH & Co KG
@@ -70,13 +70,3 @@ Library
         wai == 1.1.*
     if !os(windows)
         Build-depends: unix == 2.*
-
-Executable cryptd-slave-template
-    Ghc-options:     -Wall -Werror
-    Main-is:
-        Cryptd/Slave.hs
-    Build-depends:
-        cmdargs,
-        warp == 1.1.*
-    Other-modules:
-        Cryptd.Slave.CLI
