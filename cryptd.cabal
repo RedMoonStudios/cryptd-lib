@@ -24,7 +24,7 @@ Copyright:           (C) 2011 RedMoon Studios GmbH & Co KG
 Category:            Network
 
 Build-type:          Simple
-Cabal-version:       >= 1.6
+Cabal-version:       >= 1.8
 
 Source-repository head
     Type:            git
