@@ -1,4 +1,4 @@
-module Cryptd.Lib.TLS (runTLS, runTLSServer) where
+module Cryptd.Lib.TLS (runTLS, runTLSServer, sendData) where
 
 import System.IO
 import Data.Maybe (isJust, fromJust)
