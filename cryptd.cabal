@@ -48,7 +48,7 @@ Library
         directory,
         network,
         tls >= 0.9,
-        tls-extra,
+        tls-extra >= 0.4.3,
         crypto-pubkey-types,
         certificate,
         cprng-aes,
