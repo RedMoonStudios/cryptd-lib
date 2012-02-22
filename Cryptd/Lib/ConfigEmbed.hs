@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Cryptd.Lib.ConfigEmbed
     ( Config(..)
+    , injectConfig
     , privateKey
     , publicX509
     , secret
@@ -10,10 +11,11 @@ module Cryptd.Lib.ConfigEmbed
 where
 
 import Data.DeriveTH
-import Data.FileEmbed (dummySpace)
-import Data.Serialize (decode, Serialize(..))
+import Data.FileEmbed (dummySpace, inject)
+import Data.Serialize (encode, decode, Serialize(..))
 import Data.Certificate.X509 (encodeCertificate, decodeCertificate, X509)
 import Crypto.Types.PubKey.RSA (PrivateKey(..))
+import Data.ByteString (ByteString)
 
 data Config = Config
     { cPrivateKey :: PrivateKey
@@ -30,6 +32,9 @@ instance Serialize X509 where
 
 $(derive makeSerialize ''PrivateKey)
 $(derive makeSerialize ''Config)
+
+injectConfig :: Config -> ByteString -> Maybe ByteString
+injectConfig config = inject (encode config)
 
 getConfig :: Config
 getConfig =
