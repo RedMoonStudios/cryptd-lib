@@ -1,0 +1,111 @@
+Name:                cryptd
+Version:             0.1
+Synopsis:            MoonID encryption daemon
+Homepage:            https://github.com/RedMoonStudios/cryptd
+License:             AllRightsReserved
+Author:              RedMoon Studios GmbH & Co KG
+Maintainer:          ssladmin@redmoonstudios.de
+Description:
+    This is the RedMoon Studios encryption daemon, which acts as some kind of
+    tunnel, serializing HTTP API Requests from/to slaves.
+
+    The daemon consists of a master and a slave, where the master is some kind
+    of a metaserver and connection pooler and also monitores slave connections.
+
+    Slaves are built using binaries with placeholders and are added to the
+    masters storage to be built/patched with the placeholder (partner specific
+    stuff and certificates).
+
+    That way, encryption integration and handling certificates becomes quite
+    easy on both sides.
+
+Copyright:           (C) 2011 RedMoon Studios GmbH & Co KG
+Category:            Network
+
+Build-type:          Simple
+Cabal-version:       >= 1.6
+
+Source-repository head
+    Type:            git
+    Location:        git@github.com:RedMoonStudios/cryptd.git
+
+Library
+    Ghc-options:     -Wall -Werror
+    Exposed-modules:
+        Cryptd.Lib.HTTP
+        Cryptd.Lib.HTTPSerial
+        Cryptd.Lib.TLS
+        Cryptd.Lib.Tunnel
+        Cryptd.Lib.Callbacks
+        Cryptd.Lib.Daemonize
+    Build-depends:
+        base < 5,
+        lifted-base,
+        mtl,
+        stm,
+        random,
+        text,
+        case-insensitive,
+        filepath,
+        directory,
+        network,
+        tls,
+        tls-extra,
+        RSA,
+        crypto-pubkey-types,
+        certificate,
+        cprng-aes,
+        containers,
+        safecopy,
+        derive,
+        acid-state,
+        cereal,
+        bytestring,
+        file-embed,
+        blaze-builder,
+        HTTP,
+        http-types,
+        vault,
+        conduit (>= 0.2.3 && < 0.3) || (>= 0.2 && < 0.2.2),
+        wai == 1.1.*
+    if !os(windows)
+        Build-depends: unix == 2.*
+
+Executable cryptd
+    Ghc-options:     -Wall -Werror
+    Main-is:
+        Cryptd/Master.hs
+    Build-depends:
+        time,
+        cmdargs,
+        HsOpenSSL,
+        attoparsec-conduit >= 0.2,
+        warp == 1.1.*,
+        unordered-containers,
+        aeson
+    Other-modules:
+        Cryptd.Master.CLI.Options
+        Cryptd.Master.CLI.Serve
+        Cryptd.Master.CLI.Arch
+        Cryptd.Master.CLI.Partner
+        Cryptd.Master.CLI.Build
+        Cryptd.Master.CLI
+        Cryptd.Master.Storage.Partner
+        Cryptd.Master.Storage.Architecture
+        Cryptd.Master.Storage
+        Cryptd.Master.ArchFile
+        Cryptd.Master.ConnMgr
+        Cryptd.Master.Certs
+        Cryptd.Master.Constants
+        Cryptd.Master.Warp
+        Cryptd.Master.Json
+
+Executable cryptd-slave-template
+    Ghc-options:     -Wall -Werror
+    Main-is:
+        Cryptd/Slave.hs
+    Build-depends:
+        cmdargs,
+        warp == 1.1.*
+    Other-modules:
+        Cryptd.Slave.CLI
