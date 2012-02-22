@@ -71,35 +71,6 @@ Library
     if !os(windows)
         Build-depends: unix == 2.*
 
-Executable cryptd
-    Ghc-options:     -Wall -Werror
-    Main-is:
-        Cryptd/Master.hs
-    Build-depends:
-        time,
-        cmdargs,
-        HsOpenSSL,
-        attoparsec-conduit >= 0.2,
-        warp == 1.1.*,
-        unordered-containers,
-        aeson
-    Other-modules:
-        Cryptd.Master.CLI.Options
-        Cryptd.Master.CLI.Serve
-        Cryptd.Master.CLI.Arch
-        Cryptd.Master.CLI.Partner
-        Cryptd.Master.CLI.Build
-        Cryptd.Master.CLI
-        Cryptd.Master.Storage.Partner
-        Cryptd.Master.Storage.Architecture
-        Cryptd.Master.Storage
-        Cryptd.Master.ArchFile
-        Cryptd.Master.ConnMgr
-        Cryptd.Master.Certs
-        Cryptd.Master.Constants
-        Cryptd.Master.Warp
-        Cryptd.Master.Json
-
 Executable cryptd-slave-template
     Ghc-options:     -Wall -Werror
     Main-is:
