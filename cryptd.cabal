@@ -1,4 +1,4 @@
-Name:                cryptd
+Name:                cryptd-lib
 Version:             0.1
 Synopsis:            MoonID encryption daemon (library)
 Homepage:            https://github.com/RedMoonStudios/cryptd
