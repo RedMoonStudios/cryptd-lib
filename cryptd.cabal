@@ -47,7 +47,7 @@ Library
         filepath,
         directory,
         network,
-        tls,
+        tls >= 0.9,
         tls-extra,
         crypto-pubkey-types,
         certificate,
