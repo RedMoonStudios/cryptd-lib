@@ -2,7 +2,8 @@ Name:                cryptd
 Version:             0.1
 Synopsis:            MoonID encryption daemon (library)
 Homepage:            https://github.com/RedMoonStudios/cryptd
-License:             AllRightsReserved
+License:             GPL
+License-file:        LICENSE
 Author:              RedMoon Studios GmbH & Co KG
 Maintainer:          ssladmin@redmoonstudios.de
 Description:
