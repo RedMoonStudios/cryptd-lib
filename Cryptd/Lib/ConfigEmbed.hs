@@ -7,6 +7,7 @@ module Cryptd.Lib.ConfigEmbed
     , publicX509
     , secret
     , url
+    , masterHost
     )
 where
 
@@ -22,6 +23,7 @@ data Config = Config
     , cPublicKey :: X509
     , cSecret :: String
     , cURL :: String
+    , cMasterHost :: String
     } deriving (Show)
 
 instance Serialize X509 where
@@ -53,3 +55,6 @@ secret = cSecret getConfig
 
 url :: String
 url = cURL getConfig
+
+masterHost :: String
+masterHost = cMasterHost getConfig
