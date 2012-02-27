@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell, FlexibleInstances, OverloadedStrings,
              TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+-- | Serialize HTTP data into 'BS.ByteString's.
 module Cryptd.Lib.HTTPSerial
     ( decode, encode
     , consumeRequest, supplyRequest, FullRequest

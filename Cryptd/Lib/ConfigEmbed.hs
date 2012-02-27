@@ -1,5 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+-- | Functions for retrieving and patching configuration data into slave
+-- binaries.
 module Cryptd.Lib.ConfigEmbed
     ( Config(..)
     , injectConfig

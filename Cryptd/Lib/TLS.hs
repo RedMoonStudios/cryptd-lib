@@ -1,3 +1,4 @@
+-- | Interface for providing networking using TCP sockets and TLS.
 module Cryptd.Lib.TLS (runTLS, runTLSServer, sendData, recvData') where
 
 import System.IO

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- | Perform HTTP requests.
 module Cryptd.Lib.HTTP (request) where
 
 import Data.List (isPrefixOf)

@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+-- | Functions helping in daemonizing a particular function/process.
 module Cryptd.Lib.Daemonize (daemonize) where
 
 #if !defined(mingw32_HOST_OS) && !defined(cygwin32_HOST_OS) && !defined(_WIN32)

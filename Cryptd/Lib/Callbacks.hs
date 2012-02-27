@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- | A collection of callbacks for "Cryptd.Lib.Tunnel".
 module Cryptd.Lib.Callbacks (requestLoop) where
 
 import Control.Monad (forever)

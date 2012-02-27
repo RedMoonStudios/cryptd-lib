@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+-- | Provides support for double-sided HTTP proxies.
 module Cryptd.Lib.Tunnel
     ( TunnelHandle
     , TunnelStatus(..)
