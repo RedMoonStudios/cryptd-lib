@@ -23,28 +23,43 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 
 import Cryptd.Lib.HTTPSerial
 
-data Channel = ChannelRequest FullRequest
-             | ChannelResponse Response
-             | ChannelKeepalive
+-- | A datatype repesenting the protocol inside the tunnel.
+data Channel = ChannelRequest FullRequest -- ^ HTTP request from tunnel
+             | ChannelResponse Response -- ^ HTTP response to tunnel
+             | ChannelKeepalive -- ^ Keepalive packet
 
 $(derive makeSerialize ''Channel)
 
+-- | A Handle for talking from/to the Tunnel.
 type TunnelHandle = TLSCtx Handle
 
-data TunnelStatus = Active (Maybe String) | Shutdown | Down
+-- | The status of the tunnel.
+data TunnelStatus
+    = Active (Maybe String)
+    -- ^ Tunnel is alive (with optional slave ID when used on master)
+    | Shutdown
+    -- ^ Tunnel is requested to shut down the connection
+    | Down
+    -- ^ Tunnel is not available.
 
+-- | The state representing the tunnel's 'Channel's and 'TunnelStatus'.
 data TunnelState = TunnelState
-    { inChannel :: TChan Channel -- Data coming from tunnel
-    , outChannel :: TChan Channel -- Data going to tunnel
+    { inChannel :: TChan Channel -- ^ Data coming from tunnel
+    , outChannel :: TChan Channel -- ^ Data going to tunnel
     , tunnelStatus :: TVar TunnelStatus
     }
 
+-- | Various callback functions for the tunnel handler.
 data HandlerCallbacks = HandlerCallbacks
     { onConnect :: TunnelHandle -> TunnelState -> IO Bool
+    -- ^ First function to call just after the connection is established.
     , onRecv :: TunnelHandle -> TunnelState -> IO ()
+    -- ^ Called whenever data was received from the tunnel.
     , onLoop :: TunnelHandle -> TunnelState -> IO ()
+    -- ^ Function that is 'forkIO'ed on every connection.
     }
 
+-- | Return 'HandlerCallbacks' with all-noop functions.
 noCallbacks :: HandlerCallbacks
 noCallbacks = HandlerCallbacks
     { onConnect = \_ _ -> return True
@@ -52,10 +67,17 @@ noCallbacks = HandlerCallbacks
     , onLoop = \_ _ -> return ()
     }
 
-updateTVar :: TVar a -> (a -> a) -> STM ()
+-- | Update a 'TVar'.
+updateTVar :: TVar a
+           -- ^ The 'TVar' to operate on.
+           -> (a -> a)
+           -- ^ Function that takes 'a' and returns a new value of type 'a'.
+           -> STM ()
 updateTVar dest fun =
     readTVar dest >>= writeTVar dest . fun
 
+-- | Function that forks itself into the background and just receives data,
+-- sending it into the given 'TChan Channel'.
 listener :: TunnelHandle -> TChan Channel -> IO ThreadId
 listener handle input =
     forkIO $ forever $ do
@@ -65,6 +87,8 @@ listener handle input =
              Left e -> error $ "Can't decode packet from Tunnel" ++ e
              Right p -> atomically $ writeTChan input p
 
+-- | Handle a connection by starting the 'listener' and waiting for values
+-- coming from 'outChannel', just to push them into the connection.
 handler :: HandlerCallbacks -> TunnelState -> TunnelHandle -> IO ()
 handler cb state handle = connectHandler $ finishSetDown $ do
     _ <- listener handle (inChannel state)
@@ -82,6 +106,7 @@ handler cb state handle = connectHandler $ finishSetDown $ do
 
     connectHandler io = onConnect cb handle state >>= flip when io
 
+-- | Initialize all 'TVar's and 'TChan's associated with 'TunnelState'.
 initializeState :: IO TunnelState
 initializeState = do
     inChan <- newTChanIO
@@ -89,6 +114,7 @@ initializeState = do
     tstatus <- newTVarIO Down
     return $ TunnelState inChan outChan tstatus
 
+-- | Create a new tunnel handler function using the given 'HandlerCallbacks'.
 makeHandler :: HandlerCallbacks -> IO (TunnelState, TunnelHandle -> IO ())
 makeHandler cb = do
     s <- initializeState

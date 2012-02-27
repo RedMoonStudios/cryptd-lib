@@ -13,7 +13,15 @@ import Cryptd.Lib.HTTP (request)
 import Cryptd.Lib.HTTPSerial (supplyRequest)
 import Cryptd.Lib.Tunnel (TunnelHandle, TunnelState(..), TunnelStatus(..), Channel(..))
 
-requestLoop :: String -> TunnelHandle -> TunnelState -> IO ()
+-- | Default request loop callback for "Cryptd.Lib.Tunnel".
+--
+-- This callback is sending an HTTP 'request' to the supplied URL whenever a
+-- 'ChannelRequest' value is coming from 'inChannel'.
+requestLoop :: String
+            -- ^ URL to send request to.
+            -> TunnelHandle
+            -> TunnelState
+            -> IO ()
 requestLoop url _ ts = forever $ do
     (fullReq, tstatus) <- atomically $ do
         val <- readTChan (inChannel ts)

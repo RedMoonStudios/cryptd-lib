@@ -16,6 +16,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.CaseInsensitive as CI
 
+-- | Convert a 'HeaderName' into the representation used by "HT".
 fromHeaderName :: HeaderName -> CI.CI HT.Ascii
 fromHeaderName (HdrCustom s) = CI.mk . B.pack $ s
 fromHeaderName hn =
@@ -23,6 +24,7 @@ fromHeaderName hn =
   where
     ff = (== hn) . snd
 
+-- | Convert a representation used by "HT" into a 'HeaderName'.
 toHeaderName :: CI.CI HT.Ascii -> HeaderName
 toHeaderName ascii =
     getRes result
@@ -33,6 +35,7 @@ toHeaderName ascii =
     result = filter ff headerMap
     ff = (== unpacked) . fst
 
+-- | Convert a list of 'Header's into "HT" headers.
 fromHeaders :: [Header] -> [HT.Header]
 fromHeaders =
     map hdrConv
@@ -40,6 +43,7 @@ fromHeaders =
     hdrConv (Header key value) =
         (fromHeaderName key, B.pack value)
 
+-- | Convert "HT" headers unto a list of 'Header's.
 toHeaders :: [HT.Header] -> [Header]
 toHeaders =
     map hdrConv
@@ -47,7 +51,12 @@ toHeaders =
     hdrConv (key, value) =
         Header (toHeaderName key) (B.unpack value)
 
-joinURI :: URI -> URI -> URI
+-- | Join 'URI's using the first one as a basepath.
+--
+-- The to be joined URI is not allowed to go up further than the base path.
+joinURI :: URI -- ^ URI of the base path
+        -> URI -- ^ URI to append to the base path
+        -> URI -- ^ The new URI
 joinURI base rel =
     newuri { uriPath = basepath +/+ newpath }
   where
@@ -59,13 +68,19 @@ joinURI base rel =
     newpath = uriPath newuri
     newuri = fromMaybe base $ relativeTo rel base
 
+-- | Filter out certain headers.
+--
+-- Currently this is just 'HdrHost'.
 blacklist :: [Header] -> [Header]
 blacklist = filter (mh . hdrName)
   where
     mh HdrHost = False
     mh _ = True
 
-request :: String -> Request -> IO Response
+-- | Perform a HTTP request using 'Request' and a base URI.
+request :: String -- ^ The base URI
+        -> Request -- ^ The request to send
+        -> IO Response -- ^ The response from the webserver.
 request rooturi req =
     return . toResponse =<< runHTTP
   where

@@ -58,14 +58,20 @@ instance Serialize Response where
         builder <- get
         return $ ResponseBuilder status headers (fromByteString builder)
 
+-- | A type separating 'Request' and the body.
+--
+-- This is to correctly serialize conduits which involve IO actions, as cereal
+-- is implemented entirely pure.
 data FullRequest = FullRequest Request LBS.ByteString
 $(derive makeSerialize ''FullRequest)
 
+-- | Turn a 'Request' into a 'FullRequest' consuming the body from 'Request'
 consumeRequest :: Request -> IO FullRequest
 consumeRequest req =
     fmap (FullRequest req . LBS.fromChunks)
          (runResourceT . lazyConsume . requestBody $ req)
 
+-- | Turn a 'FullRequest' into a 'Request', supplying a new 'Source' to it.
 supplyRequest :: FullRequest -> IO Request
 supplyRequest (FullRequest req body) =
     return $ req { requestBody = sourceList $ LBS.toChunks body }

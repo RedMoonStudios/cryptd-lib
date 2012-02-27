@@ -10,7 +10,10 @@ import System.IO (SeekMode(AbsoluteSeek))
 import System.Exit
 import System.Posix
 
-daemonize :: String -> IO () -> IO ()
+-- | Turn a function into a daemonized process.
+daemonize :: String -- ^ The name to lock on
+          -> IO () -- ^ The 'IO' action of the actual activity
+          -> IO ()
 daemonize lockName fun =
     setFileCreationMask 0 >> forkProcess outer >>
         exitImmediately ExitSuccess
@@ -26,9 +29,11 @@ daemonize lockName fun =
       where
         connectWith oldFd newFd = closeFd newFd >> dupTo oldFd newFd
 
+-- | Get a 'FilePath' from a given lock name.
 getLockFile :: String -> IO FilePath
 getLockFile ln = fmap (</> (ln ++ ".lock")) getTemporaryDirectory
 
+-- | Acquire a lock on the given lock name.
 acquireLock :: String -> IO (Fd, FilePath)
 acquireLock lockName = do
     lfile <- getLockFile lockName
@@ -38,10 +43,12 @@ acquireLock lockName = do
   where
     modes = unionFileModes ownerReadMode ownerWriteMode
 
+-- | Release lock on the specified 'FilePath' and close 'Fd'.
 releaseLock :: (Fd, FilePath) -> IO ()
 releaseLock (fd, lfile) = closeFd fd >> removeLink lfile
 
 #else
+-- | We're on non-Unix, so this function is equivalent to 'id'.
 daemonize :: String -> IO () -> IO ()
 daemonize _ = id
 #endif
