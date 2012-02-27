@@ -9,9 +9,9 @@ import Data.CaseInsensitive (mk)
 import Network.Wai (Request(..))
 import Data.ByteString.Char8 (pack)
 
-import Cryptd.Lib.HTTP
+import Cryptd.Lib.HTTP (request)
 import Cryptd.Lib.HTTPSerial (supplyRequest)
-import Cryptd.Lib.Tunnel
+import Cryptd.Lib.Tunnel (TunnelHandle, TunnelState(..), TunnelStatus(..), Channel(..))
 
 requestLoop :: String -> TunnelHandle -> TunnelState -> IO ()
 requestLoop url _ ts = forever $ do
