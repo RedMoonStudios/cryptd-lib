@@ -4,6 +4,7 @@ module Cryptd.Lib.HTTP (request) where
 
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
+import Data.Function (on)
 import Data.Conduit (runResourceT)
 import Data.Conduit.Lazy (lazyConsume)
 import Network.Wai (Request(..), Response(..), responseLBS)
@@ -52,22 +53,34 @@ toHeaders =
     hdrConv (key, value) =
         Header (toHeaderName key) (B.unpack value)
 
--- | Join 'URI's using the first one as a basepath.
+-- | Join URLs using the first one as a basepath.
 --
--- The to be joined URI is not allowed to go up further than the base path.
-joinURI :: URI -- ^ URI of the base path
-        -> URI -- ^ URI to append to the base path
-        -> URI -- ^ The new URI
-joinURI base rel =
-    newuri { uriPath = basepath +/+ newpath }
+-- The to be joined URL is not allowed to go up further than the base path.
+joinURL :: String -- ^ URI of the base path
+        -> String -- ^ URI to append to the base path
+        -> String -- ^ The new URI
+joinURL =
+    join `on` sanitize
   where
-    a +/+ b | a `isPrefixOf` b = b
-            | otherwise = trimR a ++ "/" ++ trimL b
+    sanitize = flip killdots []
+    join a b | a `isPrefixOf` b = b
+             | otherwise = trimR a ++ "/" ++ trimL b
+
+    killdots [] [] = "/"
+    killdots [] a = reverse a
+    killdots ( '.' : '.' : '/' : r ) a | isSeg a = killdots r  ('/' : trimPath a)
+    killdots ( '.' : '.' : [] )      a | isSeg a = killdots [] ('/' : trimPath a)
+    killdots ( '/' : r )             a = killdots r  ('/' : trimL a)
+    killdots ( h : r )               a = killdots r  (h : a)
+
+    isSeg []        = True
+    isSeg ('/' : _) = True
+    isSeg _         = False
+
+    trimPath = trimL . dropWhile (/= '/') . trimL
+
     trimL = dropWhile (== '/')
     trimR = reverse . trimL . reverse
-    basepath = uriPath base
-    newpath = uriPath newuri
-    newuri = fromMaybe base $ relativeTo rel base
 
 -- | Filter out certain headers.
 --
