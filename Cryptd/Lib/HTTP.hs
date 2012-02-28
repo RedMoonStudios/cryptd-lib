@@ -17,6 +17,7 @@ import qualified Network.HTTP.Base as H
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.CaseInsensitive as CI
+import qualified Network.HTTP.Conduit as HC
 
 -- | Convert a 'HeaderName' into the representation used by "HT".
 fromHeaderName :: HeaderName -> CI.CI HT.Ascii
@@ -91,36 +92,21 @@ blacklist = filter (mh . hdrName)
     mh HdrHost = False
     mh _ = True
 
--- | Perform a HTTP request using 'Request' and a base URI.
-request :: String -- ^ The base URI
+-- | Perform a HTTP request using 'Request' and a base URL.
+request :: String -- ^ The base URL
         -> Request -- ^ The request to send
         -> IO Response -- ^ The response from the webserver.
-request rooturi req =
-    return . toResponse =<< runHTTP
+request rooturl req = do
+    baseReq <- HC.parseUrl rooturl
+    newReq <- mkReq baseReq req
+    r <- HC.withManager (HC.lbsResponse . HC.http newReq)
+    return $ responseLBS (HC.statusCode r) (HC.responseHeaders r) (HC.responseBody r)
   where
-    baseuri = fromMaybe
-        (error $ "Can't parse base URI: " ++ rooturi)
-        (parseAbsoluteURI rooturi)
-    runHTTP = do
-        body <- runResourceT . lazyConsume . requestBody $ req
-        httpResponse <- simpleHTTP $ newReq body
-        case httpResponse of
-             Left err -> error $ show err
-             Right v -> return v
-    newReq body = H.Request
-        { H.rqURI = joinURI baseuri . justify . parseRelativeReference $ uri
-        , H.rqBody = LB.fromChunks body
-        , H.rqHeaders = blacklist . toHeaders $ requestHeaders req
-        , H.rqMethod = H.Custom $ B.unpack $ requestMethod req
-        }
-    uri = B.unpack $ rawPathInfo req
-    justify = fromMaybe (error $ "Unable to parse URI: " ++ uri)
-    toResponse res =
-        responseLBS status headers body
-      where
-        convertStatusCode (v,c,r) = 100 * v + 10 * c + r
-
-        status = HT.Status (convertStatusCode $ H.rspCode res)
-                           (B.pack $ H.rspReason res)
-        headers = fromHeaders $ H.rspHeaders res
-        body = H.rspBody res
+    mkReq b r = do
+        body <- runResourceT . lazyConsume . requestBody $ r
+        return $ b { HC.method = requestMethod r
+                   , HC.path = B.pack $ joinURL rooturl $ B.unpack $ rawPathInfo r
+                   , HC.queryString = rawQueryString r
+                   , HC.requestHeaders = requestHeaders r
+                   , HC.requestBody = HC.RequestBodyLBS . LB.fromChunks $ body
+                   }
