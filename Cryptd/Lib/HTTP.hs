@@ -53,7 +53,7 @@ request rooturl req = do
     mkReq b r = do
         body <- runResourceT . lazyConsume . requestBody $ r
         return $ b { HC.method = requestMethod r
-                   , HC.path = B.pack $ joinURL rooturl $ B.unpack $ rawPathInfo r
+                   , HC.path = B.pack $ (joinURL `on` B.unpack) (HC.path b) (rawPathInfo r)
                    , HC.queryString = rawQueryString r
                    , HC.requestHeaders = requestHeaders r
                    , HC.requestBody = HC.RequestBodyLBS . LB.fromChunks $ body
