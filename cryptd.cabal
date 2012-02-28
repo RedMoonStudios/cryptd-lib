@@ -58,7 +58,6 @@ Library
         bytestring,
         file-embed,
         blaze-builder,
-        HTTP,
         http-types,
         http-conduit,
         vault,
