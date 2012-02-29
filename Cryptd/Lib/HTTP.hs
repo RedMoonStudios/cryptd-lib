@@ -25,11 +25,11 @@ joinURL =
              | otherwise = trimR a ++ "/" ++ trimL b
 
     killdots [] [] = "/"
-    killdots [] a = reverse a
-    killdots ( '.' : '.' : '/' : r ) a | isSeg a = killdots r  ('/' : trimPath a)
-    killdots ( '.' : '.' : [] )      a | isSeg a = killdots [] ('/' : trimPath a)
-    killdots ( '/' : r )             a = killdots r  ('/' : trimL a)
-    killdots ( h : r )               a = killdots r  (h : a)
+    killdots [] a  = reverse a
+    killdots ('.':'.':'/' : r)  a | isSeg a = killdots r  ('/' : trimPath a)
+    killdots ('.':'.'     : []) a | isSeg a = killdots [] ('/' : trimPath a)
+    killdots ('/'         : r)  a = killdots r ('/' : trimL a)
+    killdots (h           : r)  a = killdots r (h : a)
 
     isSeg []        = True
     isSeg ('/' : _) = True
@@ -48,13 +48,17 @@ request rooturl req = do
     baseReq <- HC.parseUrl rooturl
     newReq <- mkReq baseReq req
     r <- HC.withManager (HC.lbsResponse . HC.http newReq)
-    return $ responseLBS (HC.statusCode r) (HC.responseHeaders r) (HC.responseBody r)
+    return $ responseLBS (HC.statusCode r)
+                         (HC.responseHeaders r)
+                         (HC.responseBody r)
   where
     mkReq b r = do
         body <- runResourceT . lazyConsume . requestBody $ r
         return $ b { HC.method = requestMethod r
-                   , HC.path = B.pack $ (joinURL `on` B.unpack) (HC.path b) (rawPathInfo r)
+                   , HC.path = newpath
                    , HC.queryString = rawQueryString r
                    , HC.requestHeaders = requestHeaders r
                    , HC.requestBody = HC.RequestBodyLBS . LB.fromChunks $ body
                    }
+      where
+        newpath = B.pack $ (joinURL `on` B.unpack) (HC.path b) (rawPathInfo r)
