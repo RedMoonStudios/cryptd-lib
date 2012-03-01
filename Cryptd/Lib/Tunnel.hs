@@ -24,7 +24,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 
 import Cryptd.Lib.HTTPSerial
 
--- | A datatype repesenting the protocol inside the tunnel.
+-- | A datatype representing the protocol inside the tunnel.
 data Channel = ChannelRequest FullRequest -- ^ HTTP request from tunnel
              | ChannelResponse Response -- ^ HTTP response to tunnel
              | ChannelKeepalive -- ^ Keepalive packet
@@ -77,7 +77,7 @@ updateTVar :: TVar a
 updateTVar dest fun =
     readTVar dest >>= writeTVar dest . fun
 
--- | Function that forks itself into the background and just receives data,
+-- | Function that forks itself into the background and just receives data
 -- sending it into the given 'TChan Channel'.
 listener :: TunnelHandle -> TChan Channel -> IO ThreadId
 listener handle input =
@@ -88,8 +88,8 @@ listener handle input =
              Left e -> error $ "Can't decode packet from Tunnel" ++ e
              Right p -> atomically $ writeTChan input p
 
--- | Handle a connection by starting the 'listener' and waiting for values
--- coming from 'outChannel', just to push them into the connection.
+-- | Handle a connection by starting the 'listener', waiting for values
+-- coming from 'outChannel' and pushing them into the connection.
 handler :: HandlerCallbacks -> TunnelState -> TunnelHandle -> IO ()
 handler cb state handle = connectHandler $ finishSetDown $ do
     _ <- listener handle (inChannel state)
