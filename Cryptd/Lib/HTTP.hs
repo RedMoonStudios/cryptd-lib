@@ -36,7 +36,7 @@ toHeaderName ascii =
     result = filter ff headerMap
     ff = (== unpacked) . fst
 
--- | Convert a list of 'Header's into "HT" headers.
+-- | Convert a list of 'Headers' into "HT" headers.
 fromHeaders :: [Header] -> [HT.Header]
 fromHeaders =
     map hdrConv
@@ -44,7 +44,7 @@ fromHeaders =
     hdrConv (Header key value) =
         (fromHeaderName key, B.pack value)
 
--- | Convert "HT" headers unto a list of 'Header's.
+-- | Convert "HT" headers unto a list of 'Headers'.
 toHeaders :: [HT.Header] -> [Header]
 toHeaders =
     map hdrConv
@@ -52,7 +52,7 @@ toHeaders =
     hdrConv (key, value) =
         Header (toHeaderName key) (B.unpack value)
 
--- | Join 'URI's using the first one as a basepath.
+-- | Join 'URIs' using the first one as a basepath.
 --
 -- The to be joined URI is not allowed to go up further than the base path.
 joinURI :: URI -- ^ URI of the base path
