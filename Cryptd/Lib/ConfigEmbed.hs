@@ -38,7 +38,7 @@ instance Serialize X509 where
 $(derive makeSerialize ''PrivateKey)
 $(derive makeSerialize ''Config)
 
--- | Inject 'Config' values into a unpatched slave executable.
+-- | Inject 'Config' values into an unpatched slave executable.
 injectConfig :: Config
              -> ByteString
              -- ^ The unpatched executable
