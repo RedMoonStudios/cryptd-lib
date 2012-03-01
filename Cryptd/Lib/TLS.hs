@@ -84,13 +84,13 @@ serve host port certs handler = withSocketsDo $ do
             tlsHandle <- server config rng tcpHandle
             doFinalize tcpHandle tlsHandle handler
 
--- | Wait for some time, when a connection has to be retried.
+-- | Wait for some time when a connection has to be retried.
 retryWait :: Int
           -- ^ Seconds to wait
           -> IO ()
 retryWait secs = threadDelay $ 1000000 * secs
 
--- | Run an action, passing the 'Just' value or the error into a handler
+-- | Run an action passing the 'Just' value or the error into a handler
 -- function
 maybeCatch :: (String -> IO ())
            -- ^ The handler function
@@ -103,7 +103,7 @@ maybeCatch exhandler fun = do
   where
     handle e = return (Just $ show (e :: EX.SomeException))
 
--- | Run an action returning 'Maybe', printing out the return value or the
+-- | Run an action returning 'Maybe' printing out the return value or the
 -- error.
 maybePrintCatch :: IO (Maybe String) -> IO ()
 maybePrintCatch = maybeCatch putStrLn
@@ -122,7 +122,7 @@ runConnector :: LoopCmd
 runConnector loop host port =
     loop host (PortNumber $ fromInteger port)
 
--- | Forever run TLS loop, catching errors and printing them.
+-- | Forever run TLS loop catching errors and printing them.
 runTLSLoop :: LoopCmd
            -> String -- ^ Host/IP of the current connection
            -> Integer -- ^ Port of the current connection
@@ -133,7 +133,7 @@ runTLSLoop loop host port certs handler =
     forkIO . forever . maybePrintCatchWait $
         runConnector loop host port certs handler
 
--- | Connect to a TLS server an the specified host/IP and port, using 'Certs'
+-- | Connect to a TLS server an the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
 runTLS :: String -- ^ Host/IP to connect to
        -> Integer -- ^ Port to use for connection
@@ -142,7 +142,7 @@ runTLS :: String -- ^ Host/IP to connect to
        -> IO ThreadId
 runTLS = runTLSLoop connect
 
--- | Run a TLS server listening on the specified host/IP and port, using 'Certs'
+-- | Run a TLS server listening on the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
 runTLSServer :: String -- ^ Host/IP to listen on
              -> Integer -- ^ Port to use for connection
