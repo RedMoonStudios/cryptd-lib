@@ -14,7 +14,7 @@ Description:
     of a metaserver and connection pooler and also monitores slave connections.
 
     Slaves are built using binaries with placeholders and are added to the
-    masters storage to be built/patched with the placeholder (partner specific
+    master's storage to be built/patched with the placeholder (partner specific
     stuff and certificates).
 
     That way, encryption integration and handling certificates becomes quite
