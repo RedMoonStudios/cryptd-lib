@@ -47,7 +47,7 @@ request :: String -- ^ The base URL
 request rooturl req = do
     baseReq <- HC.parseUrl rooturl
     newReq <- mkReq baseReq req
-    r <- HC.withManager (HC.lbsResponse . HC.http newReq)
+    r <- HC.withManager (HC.httpLbs newReq)
     return $ responseLBS (HC.statusCode r)
                          (HC.responseHeaders r)
                          (HC.responseBody r)
