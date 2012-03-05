@@ -58,8 +58,8 @@ Library
         bytestring,
         file-embed,
         blaze-builder,
-        HTTP,
         http-types,
+        http-conduit,
         vault,
         conduit (>= 0.2.3 && < 0.3) || (>= 0.2 && < 0.2.2),
         wai == 1.1.*
