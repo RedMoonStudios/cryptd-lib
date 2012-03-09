@@ -1,6 +1,16 @@
 -- | Interface for providing networking using TCP sockets and TLS.
 module Cryptd.Lib.TLS
-    ( TLSSettings(..)
+    ( HandlerCmd
+    , Certs
+    -- * Settings
+    , TLSSettings
+    , tlsHost
+    , tlsPort
+    , tlsCerts
+    , tlsLogger
+    , tlsHandler
+    , mkSettings
+    -- * TLS runner
     , runTLSClient
     , runTLSServer
     -- * Sending/receiving
@@ -36,11 +46,31 @@ type LoopCmd = HostName -> PortID -> Certs -> HandlerCmd -> IO (Maybe String)
 -- | Represents the TLS handler.
 type HandlerCmd = TunnelHandle -> IO ()
 
+-- | Settings for a TLS handler.
+--
+-- The constructor for this data type is not exposed.
+-- Use 'mkSettings' to construct a default instance and modify it
+-- using the record accessor functions below.
 data TLSSettings = TLSSettings
-    { tlsHost :: String -- ^ Host/IP to bind on or connect to
-    , tlsPort :: Word16 -- ^ Numeric port to use for the connection
-    , tlsCerts :: Certs -- ^ Certificates to use for authentication
-    , tlsHandler :: HandlerCmd -- ^ Function that should handle accepts
+    { tlsHost :: String
+    -- ^ Host/IP to bind on or connect to
+    , tlsPort :: Word16
+    -- ^ Numeric port to use for the connection
+    , tlsCerts :: Certs
+    -- ^ Certificates to use for authentication
+    , tlsLogger :: Maybe (String -> IO ())
+    -- Error logger function, if 'Nothing' print to stderr
+    , tlsHandler :: HandlerCmd
+    -- ^ Function that should handle accepts
+    }
+
+mkSettings :: String -> Word16 -> Certs -> TLSSettings
+mkSettings host port certs = TLSSettings
+    { tlsHost = host
+    , tlsPort = port
+    , tlsCerts = certs
+    , tlsLogger = Nothing
+    , tlsHandler = \_ -> return ()
     }
 
 -- | Return 'TLSParams' for the given 'Certs' pair.
