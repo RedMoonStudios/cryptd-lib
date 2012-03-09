@@ -1,5 +1,5 @@
 -- | Interface for providing networking using TCP sockets and TLS.
-module Cryptd.Lib.TLS (runTLS, runTLSServer, sendData, recvData') where
+module Cryptd.Lib.TLS (runTLS, runTLSServer, TLS.sendData, TLS.recvData') where
 
 import System.IO
 import Data.Maybe (isJust, fromJust)
@@ -10,8 +10,8 @@ import Control.Exception (bracketOnError)
 import Control.Concurrent (forkIO, threadDelay, ThreadId)
 import Network
 import Network.BSD (getProtocolNumber)
-import Network.TLS hiding (PrivateKey)
-import Network.TLS.Extra
+import Network.TLS.Extra (ciphersuite_strong)
+import qualified Network.TLS as TLS
 import qualified Network.Socket as S
 import qualified Control.Exception as EX
 import qualified Crypto.Random.AESCtr as RNG
@@ -28,12 +28,12 @@ type LoopCmd = HostName -> PortID -> Certs -> HandlerCmd -> IO (Maybe String)
 type HandlerCmd = TunnelHandle -> IO ()
 
 -- | Return 'TLSParams' for the given 'Certs' pair.
-tlsConfig :: Certs -> TLSParams
-tlsConfig (pub, priv) = defaultParams
-    { pConnectVersion = TLS12
-    , pAllowedVersions = [TLS12]
-    , pCiphers = ciphersuite_strong
-    , pCertificates = [(pub, Just (PrivRSA priv))]
+tlsConfig :: Certs -> TLS.TLSParams
+tlsConfig (pub, priv) = TLS.defaultParams
+    { TLS.pConnectVersion = TLS.TLS12
+    , TLS.pAllowedVersions = [TLS.TLS12]
+    , TLS.pCiphers = ciphersuite_strong
+    , TLS.pCertificates = [(pub, Just (TLS.PrivRSA priv))]
     }
 
 -- | Listen to the given host/port and return the 'Socket'.
@@ -55,11 +55,11 @@ listenOnHost _ _ = error "Invalid port value!"
 -- | Do the TLS handshake, call the handler and cleanup.
 doFinalize :: Handle -> TunnelHandle -> HandlerCmd -> IO (Maybe String)
 doFinalize tcpHandle tlsHandle handler =
-    handshake tlsHandle >> handle tcpHandle tlsHandle
+    TLS.handshake tlsHandle >> handle tcpHandle tlsHandle
   where
     handle tcp tls = do
         EX.finally (handler tls)
-                   (bye tls >> hClose tcp)
+                   (TLS.bye tls >> hClose tcp)
         return Nothing
 
 -- | Do a TCP connect using the values specified by 'LoopCmd'.
@@ -67,7 +67,7 @@ connect :: LoopCmd
 connect host port certs handler = withSocketsDo $ do
     rng <- RNG.makeSystem
     tcpHandle <- connectTo host port
-    tlsHandle <- client config rng tcpHandle
+    tlsHandle <- TLS.client config rng tcpHandle
     doFinalize tcpHandle tlsHandle handler
   where
     config = tlsConfig certs
@@ -81,7 +81,7 @@ serve host port certs handler = withSocketsDo $ do
         (tcpHandle, _, _) <- accept tcpListener
         forkIO $ maybePrintCatchWait $ do
             let config = tlsConfig certs
-            tlsHandle <- server config rng tcpHandle
+            tlsHandle <- TLS.server config rng tcpHandle
             doFinalize tcpHandle tlsHandle handler
 
 -- | Wait for some time when a connection has to be retried.
