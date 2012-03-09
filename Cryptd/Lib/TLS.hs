@@ -69,13 +69,13 @@ data TLSSettings = TLSSettings
     }
 
 -- | Create a default instance of 'TLSSettings'.
-makeSettings :: String -> Word16 -> Certs -> TLSSettings
-makeSettings host port certs = TLSSettings
+makeSettings :: String -> Word16 -> Certs -> HandlerCmd -> TLSSettings
+makeSettings host port certs handler = TLSSettings
     { tlsHost = host
     , tlsPort = port
     , tlsCerts = certs
     , tlsLogger = Nothing
-    , tlsHandler = \_ -> return ()
+    , tlsHandler = handler
     }
 
 -- | Return 'TLSParams' for the given 'Certs' pair.
