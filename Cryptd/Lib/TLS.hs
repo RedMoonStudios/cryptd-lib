@@ -10,7 +10,7 @@ module Cryptd.Lib.TLS
     , tlsCerts
     , tlsLogger
     , tlsHandler
-    , mkSettings
+    , makeSettings
     -- * TLS runner
     , runTLSClient
     , runTLSServer
@@ -68,8 +68,9 @@ data TLSSettings = TLSSettings
     -- ^ Function that should handle accepts
     }
 
-mkSettings :: String -> Word16 -> Certs -> TLSSettings
-mkSettings host port certs = TLSSettings
+-- | Create a default instance of 'TLSSettings'.
+makeSettings :: String -> Word16 -> Certs -> TLSSettings
+makeSettings host port certs = TLSSettings
     { tlsHost = host
     , tlsPort = port
     , tlsCerts = certs
