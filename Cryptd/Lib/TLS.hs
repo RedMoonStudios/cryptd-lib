@@ -1,7 +1,14 @@
 -- | Interface for providing networking using TCP sockets and TLS.
-module Cryptd.Lib.TLS (runTLS, runTLSServer, TLS.sendData, TLS.recvData') where
+module Cryptd.Lib.TLS
+    ( TLSSettings(..)
+    , runTLS
+    , runTLSServer
+    , TLS.sendData
+    , TLS.recvData'
+    ) where
 
 import System.IO
+import Data.Word (Word16)
 import Data.Maybe (isJust, fromJust)
 import Data.Certificate.X509 (X509)
 import Crypto.Types.PubKey.RSA (PrivateKey)
@@ -26,6 +33,13 @@ type LoopCmd = HostName -> PortID -> Certs -> HandlerCmd -> IO (Maybe String)
 
 -- | Represents the TLS handler.
 type HandlerCmd = TunnelHandle -> IO ()
+
+data TLSSettings = TLSSettings
+    { tlsHost :: String -- ^ Host/IP to bind on or connect to
+    , tlsPort :: Word16 -- ^ Numeric port to use for the connection
+    , tlsCerts :: Certs -- ^ Certificates to use for authentication
+    , tlsHandler :: HandlerCmd -- ^ Function that should handle accepts
+    }
 
 -- | Return 'TLSParams' for the given 'Certs' pair.
 tlsConfig :: Certs -> TLS.TLSParams
@@ -113,41 +127,20 @@ maybePrintCatchWait :: IO (Maybe String) -> IO ()
 maybePrintCatchWait = maybeCatch (\r -> putStrLn r >> retryWait 20)
 
 -- | Run a single TLS loop.
-runConnector :: LoopCmd
-             -> String -- ^ Host/IP of the current connection
-             -> Integer -- ^ Port of the current connection
-             -> Certs
-             -> HandlerCmd
-             -> IO (Maybe String)
-runConnector loop host port =
-    loop host (PortNumber $ fromInteger port)
+runConnector :: LoopCmd -> TLSSettings -> IO (Maybe String)
+runConnector loop s = loop (tlsHost s) port (tlsCerts s) (tlsHandler s)
+  where port = PortNumber . fromIntegral . tlsPort $ s
 
 -- | Forever run TLS loop catching errors and printing them.
-runTLSLoop :: LoopCmd
-           -> String -- ^ Host/IP of the current connection
-           -> Integer -- ^ Port of the current connection
-           -> Certs
-           -> HandlerCmd
-           -> IO ThreadId
-runTLSLoop loop host port certs handler =
-    forkIO . forever . maybePrintCatchWait $
-        runConnector loop host port certs handler
+runTLSLoop :: LoopCmd -> TLSSettings -> IO ThreadId
+runTLSLoop l s = forkIO . forever . maybePrintCatchWait $ runConnector l s
 
--- | Connect to a TLS server an the specified host/IP and port using 'Certs'
+-- | Connect to a TLS server at the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
-runTLS :: String -- ^ Host/IP to connect to
-       -> Integer -- ^ Port to use for connection
-       -> Certs -- ^ Certificates to use for authentication
-       -> HandlerCmd
-       -> IO ThreadId
+runTLS :: TLSSettings -> IO ThreadId
 runTLS = runTLSLoop connect
 
 -- | Run a TLS server listening on the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
-runTLSServer :: String -- ^ Host/IP to listen on
-             -> Integer -- ^ Port to use for connection
-             -> Certs -- ^ Certificates to use for authentication
-             -> HandlerCmd
-             -> IO ThreadId
-runTLSServer host port certs hcmd = forkIO . maybePrintCatch $
-    runConnector serve host port certs hcmd
+runTLSServer :: TLSSettings -> IO ThreadId
+runTLSServer = forkIO . maybePrintCatch . runConnector serve
