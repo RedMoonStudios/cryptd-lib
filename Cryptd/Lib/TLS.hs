@@ -2,6 +2,7 @@
 module Cryptd.Lib.TLS
     ( HandlerCmd
     , Certs
+    , Logger
     -- * Settings
     , TLSSettings
     , tlsHost
@@ -46,6 +47,9 @@ type LoopCmd = HostName -> PortID -> Certs -> HandlerCmd -> IO (Maybe String)
 -- | Represents the TLS handler.
 type HandlerCmd = TunnelHandle -> IO ()
 
+-- | A function for printing or logging errors.
+type Logger = String -> IO ()
+
 -- | Settings for a TLS handler.
 --
 -- The constructor for this data type is not exposed.
@@ -58,7 +62,7 @@ data TLSSettings = TLSSettings
     -- ^ Numeric port to use for the connection
     , tlsCerts :: Certs
     -- ^ Certificates to use for authentication
-    , tlsLogger :: Maybe (String -> IO ())
+    , tlsLogger :: Maybe Logger
     -- Error logger function, if 'Nothing' print to stderr
     , tlsHandler :: HandlerCmd
     -- ^ Function that should handle accepts
@@ -119,13 +123,13 @@ connect host port certs handler = withSocketsDo $ do
     config = tlsConfig certs
 
 -- | Do a TCP bind on the values specified by 'LoopCmd'.
-serve :: LoopCmd
-serve host port certs handler = withSocketsDo $ do
+serve :: Maybe Logger -> LoopCmd
+serve logger host port certs handler = withSocketsDo $ do
     rng <- RNG.makeSystem
     tcpListener <- listenOnHost host port
     forever $ do
         (tcpHandle, _, _) <- accept tcpListener
-        forkIO $ maybePrintCatchWait $ do
+        forkIO $ maybeCatchWait logger $ do
             let config = tlsConfig certs
             tlsHandle <- TLS.server config rng tcpHandle
             doFinalize tcpHandle tlsHandle handler
@@ -136,27 +140,24 @@ retryWait :: Int
           -> IO ()
 retryWait secs = threadDelay $ 1000000 * secs
 
--- | Run an action passing the 'Just' value or the error into a handler
--- function
-maybeCatch :: (String -> IO ())
-           -- ^ The handler function
+-- | Run an action passing the 'Just' value or the error into a logger
+-- function.
+maybeCatch :: Maybe Logger
+           -- ^ The logger function, print to stderr if 'Nothing'.
            -> IO (Maybe String)
            -- ^ The action to run
            -> IO ()
-maybeCatch exhandler fun = do
+maybeCatch logger fun = do
     result <- EX.catch fun handle
-    when (isJust result) $ exhandler (fromJust result)
+    when (isJust result) $ (getRealLogger logger) (fromJust result)
   where
+    getRealLogger (Just l) = l
+    getRealLogger Nothing = hPutStrLn stderr
     handle e = return (Just $ show (e :: EX.SomeException))
 
--- | Run an action returning 'Maybe' printing out the return value or the
--- error.
-maybePrintCatch :: IO (Maybe String) -> IO ()
-maybePrintCatch = maybeCatch putStrLn
-
 -- | Same as 'maybeCatch', but wait for 20 seconds afterwards.
-maybePrintCatchWait :: IO (Maybe String) -> IO ()
-maybePrintCatchWait = maybeCatch (\r -> putStrLn r >> retryWait 20)
+maybeCatchWait :: Maybe Logger -> IO (Maybe String) -> IO ()
+maybeCatchWait l s = maybeCatch l s >> retryWait 20
 
 -- | Run a single TLS loop.
 runConnector :: LoopCmd -> TLSSettings -> IO (Maybe String)
@@ -165,7 +166,8 @@ runConnector loop s = loop (tlsHost s) port (tlsCerts s) (tlsHandler s)
 
 -- | Forever run TLS loop catching errors and printing them.
 runTLSLoop :: LoopCmd -> TLSSettings -> IO ThreadId
-runTLSLoop l s = forkIO . forever . maybePrintCatchWait $ runConnector l s
+runTLSLoop l s = forkIO . forever . maybeCatchWait logger $ runConnector l s
+  where logger = tlsLogger s
 
 -- | Connect to a TLS server at the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
@@ -175,7 +177,9 @@ runTLSClient = runTLSLoop connect
 -- | Run a TLS server listening on the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
 runTLSServer :: TLSSettings -> IO ThreadId
-runTLSServer = forkIO . maybePrintCatch . runConnector serve
+runTLSServer s = forkIO . maybeCatch logger . runConnector server $ s
+  where logger = tlsLogger s
+        server = serve logger
 
 -- | Wrapper for 'TLS.sendData'.
 sendData :: TLS.TLSCtx Handle -> ByteString -> IO ()
