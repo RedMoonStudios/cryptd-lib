@@ -1,7 +1,7 @@
 -- | Interface for providing networking using TCP sockets and TLS.
 module Cryptd.Lib.TLS
     ( TLSSettings(..)
-    , runTLS
+    , runTLSClient
     , runTLSServer
     , TLS.sendData
     , TLS.recvData'
@@ -137,8 +137,8 @@ runTLSLoop l s = forkIO . forever . maybePrintCatchWait $ runConnector l s
 
 -- | Connect to a TLS server at the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
-runTLS :: TLSSettings -> IO ThreadId
-runTLS = runTLSLoop connect
+runTLSClient :: TLSSettings -> IO ThreadId
+runTLSClient = runTLSLoop connect
 
 -- | Run a TLS server listening on the specified host/IP and port using 'Certs'
 -- and 'HandlerCmd'.
