@@ -3,14 +3,16 @@ module Cryptd.Lib.TLS
     ( TLSSettings(..)
     , runTLSClient
     , runTLSServer
-    , TLS.sendData
-    , TLS.recvData'
+    -- * Sending/receiving
+    , sendData
+    , recvData
     ) where
 
 import System.IO
 import Data.Word (Word16)
 import Data.Maybe (isJust, fromJust)
 import Data.Certificate.X509 (X509)
+import Data.ByteString.Lazy.Char8 (ByteString)
 import Crypto.Types.PubKey.RSA (PrivateKey)
 import Control.Monad (forever, when)
 import Control.Exception (bracketOnError)
@@ -144,3 +146,11 @@ runTLSClient = runTLSLoop connect
 -- and 'HandlerCmd'.
 runTLSServer :: TLSSettings -> IO ThreadId
 runTLSServer = forkIO . maybePrintCatch . runConnector serve
+
+-- | Wrapper for 'TLS.sendData'.
+sendData :: TLS.TLSCtx Handle -> ByteString -> IO ()
+sendData = TLS.sendData
+
+-- | Wrapper for 'TLS.recvData''.
+recvData :: TLS.TLSCtx Handle -> IO ByteString
+recvData = TLS.recvData'
