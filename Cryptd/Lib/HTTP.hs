@@ -4,8 +4,8 @@ module Cryptd.Lib.HTTP (request) where
 
 import Data.List (isPrefixOf)
 import Data.Function (on)
-import Data.Conduit (runResourceT)
-import Data.Conduit.Lazy (lazyConsume)
+import Data.Conduit (runResourceT, ($$))
+import Data.Conduit.List (consume)
 import Network.Wai (Request(..), Response(..), responseLBS)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -53,7 +53,7 @@ request rooturl req = do
                          (HC.responseBody r)
   where
     mkReq b r = do
-        body <- runResourceT . lazyConsume . requestBody $ r
+        body <- runResourceT $ requestBody r $$ consume
         return $ b { HC.method = requestMethod r
                    , HC.path = newpath
                    , HC.queryString = rawQueryString r

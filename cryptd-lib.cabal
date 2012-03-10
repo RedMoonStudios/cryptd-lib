@@ -61,7 +61,7 @@ Library
         http-types,
         http-conduit,
         vault,
-        conduit (>= 0.2.3 && < 0.3) || (>= 0.2 && < 0.2.2),
+        conduit == 0.2.*,
         wai == 1.1.*
     if !os(windows)
         Build-depends: unix == 2.*

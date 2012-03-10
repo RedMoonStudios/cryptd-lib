@@ -15,9 +15,8 @@ import Data.CaseInsensitive (CI, original, mk)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vault (Vault, empty)
-import Data.Conduit (Source, runResourceT)
-import Data.Conduit.List (sourceNull, sourceList)
-import Data.Conduit.Lazy (lazyConsume)
+import Data.Conduit (Source, runResourceT, ($$))
+import Data.Conduit.List (sourceNull, sourceList, consume)
 import Network.Socket (SockAddr(..), PortNumber(..))
 import Network.Wai (Request(..), Response(..))
 import Network.HTTP.Types (HttpVersion(..), Status(..), Ascii)
@@ -70,7 +69,7 @@ $(derive makeSerialize ''FullRequest)
 consumeRequest :: Request -> IO FullRequest
 consumeRequest req =
     fmap (FullRequest req . LBS.fromChunks)
-         (runResourceT . lazyConsume . requestBody $ req)
+         (runResourceT $ requestBody req $$ consume)
 
 -- | Turn a 'FullRequest' into a 'Request', supplying a new 'Source' to it.
 supplyRequest :: FullRequest -> IO Request
