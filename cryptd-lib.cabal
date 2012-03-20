@@ -43,6 +43,7 @@ Library
     Build-depends:
         base < 5,
         stm,
+        mtl,
         text,
         case-insensitive,
         filepath,

@@ -3,6 +3,7 @@
 module Cryptd.Lib.Callbacks (requestLoop) where
 
 import Control.Monad (forever)
+import Control.Monad.Trans (liftIO)
 import Control.Concurrent.STM (atomically, retry)
 import Control.Concurrent.STM.TChan (readTChan, writeTChan)
 import Control.Concurrent.STM.TVar (readTVar)
@@ -10,7 +11,7 @@ import Data.CaseInsensitive (mk)
 import Network.Wai (Request(..))
 import Data.ByteString.Char8 (pack)
 
-import Cryptd.Lib.HTTP (request)
+import Cryptd.Lib.HTTP (request, withManager)
 import Cryptd.Lib.HTTPSerial (supplyRequest)
 import Cryptd.Lib.Tunnel (TunnelHandle, TunnelState(..), TunnelStatus(..), Channel(..))
 
@@ -23,7 +24,7 @@ requestLoop :: String
             -> TunnelHandle
             -> TunnelState
             -> IO ()
-requestLoop url _ ts = forever $ do
+requestLoop url _ ts = forever . withManager $ \mgr -> liftIO $ do
     (fullReq, tstatus) <- atomically $ do
         val <- readTChan (inChannel ts)
         case val of
@@ -32,7 +33,7 @@ requestLoop url _ ts = forever $ do
                  return (r, tstatus)
              _ -> retry
     req <- supplyRequest fullReq
-    resp <- request url $ transformRequest req tstatus
+    resp <- request mgr url $ transformRequest req tstatus
     atomically $ writeTChan (outChannel ts) (ChannelResponse resp)
   where
     transformRequest req (Active (Just pid)) =
