@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Perform HTTP requests.
-module Cryptd.Lib.HTTP (request) where
+module Cryptd.Lib.HTTP (request, HC.withManager) where
 
 import Data.List (isPrefixOf)
 import Data.Function (on)
 import Data.Conduit (runResourceT, ($$))
 import Data.Conduit.List (consume)
+import Control.Monad.Trans (liftIO)
 import Network.Wai (Request(..), Response(..), responseLBS)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -41,13 +42,14 @@ joinURL =
     trimR = reverse . trimL . reverse
 
 -- | Perform a HTTP request using 'Request' and a base URL.
-request :: String -- ^ The base URL
-        -> Request -- ^ The request to send
-        -> IO Response -- ^ The response from the webserver.
-request rooturl req = do
+request :: HC.Manager  -- ^ The manager for the conduit
+        -> String      -- ^ The base URL
+        -> Request     -- ^ The request to send
+        -> IO Response -- ^ The response from the webserver
+request manager rooturl req = runResourceT $ do
     baseReq <- HC.parseUrl rooturl
-    newReq <- mkReq baseReq req
-    r <- HC.withManager (HC.httpLbs newReq)
+    newReq <- liftIO $ mkReq baseReq req
+    r <- HC.httpLbs newReq manager
     return $ responseLBS (HC.statusCode r)
                          (HC.responseHeaders r)
                          (HC.responseBody r)
