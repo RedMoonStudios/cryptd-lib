@@ -7,11 +7,11 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TChan (newTChanIO, readTChan, writeTChan)
 
 -- | A function for printing or logging errors.
-type Logger = String -> IO ()
+type Logger a = a -> IO ()
 
 -- | Fork action into the background and collect log messages.
-forkWithLogger :: Logger            -- ^ Logging function
-               -> (Logger -> IO ()) -- ^ Action to call
+forkWithLogger :: Logger a            -- ^ Logging function
+               -> (Logger a -> IO ()) -- ^ Action to call
                -> IO ()
 forkWithLogger logger run = newTChanIO >>= (>>)
     (forkIO . run . (.) atomically . writeTChan)
