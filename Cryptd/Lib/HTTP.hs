@@ -61,6 +61,7 @@ request manager rooturl req = runResourceT $ do
                    , HC.queryString = rawQueryString r
                    , HC.requestHeaders = requestHeaders r
                    , HC.requestBody = HC.RequestBodyLBS . LB.fromChunks $ body
+                   , HC.checkStatus = \_ _ -> Nothing -- Allow non-2xx, too.
                    }
       where
         newpath = B.pack $ (joinURL `on` B.unpack) (HC.path b) (rawPathInfo r)
