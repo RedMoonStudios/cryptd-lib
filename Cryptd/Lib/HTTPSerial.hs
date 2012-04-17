@@ -15,7 +15,7 @@ import Data.CaseInsensitive (CI, original, mk)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vault (Vault, empty)
-import Data.Conduit (Source, runResourceT, ($$))
+import Data.Conduit (Source, runResourceT, ResourceT, ($$))
 import Data.Conduit.List (sourceNull, sourceList, consume)
 import Network.Socket (SockAddr(..), PortNumber(..))
 import Network.Wai (Request(..), Response(..))
@@ -36,7 +36,7 @@ instance Serialize Vault where
     put _ = return ()
     get = return empty
 
-instance (Serialize (Source IO BS.ByteString)) where
+instance (Serialize (Source (ResourceT IO) BS.ByteString)) where
     put _ = return ()
     get = return sourceNull
 

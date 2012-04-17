@@ -50,7 +50,7 @@ request manager rooturl req = runResourceT $ do
     baseReq <- HC.parseUrl rooturl
     newReq <- liftIO $ mkReq baseReq req
     r <- HC.httpLbs newReq manager
-    return $ responseLBS (HC.statusCode r)
+    return $ responseLBS (HC.responseStatus r)
                          (HC.responseHeaders r)
                          (HC.responseBody r)
   where

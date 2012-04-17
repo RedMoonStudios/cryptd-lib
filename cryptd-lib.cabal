@@ -49,8 +49,8 @@ Library
         filepath,
         directory,
         network,
-        tls >= 0.9,
-        tls-extra >= 0.4.3,
+        tls == 0.9.*,
+        tls-extra == 0.4.*,
         crypto-pubkey-types,
         certificate,
         cprng-aes,
@@ -60,9 +60,9 @@ Library
         file-embed,
         blaze-builder,
         http-types,
-        http-conduit,
+        http-conduit == 1.4.*,
         vault,
-        conduit == 0.2.*,
-        wai == 1.1.*
+        conduit == 0.4.*,
+        wai == 1.2.*
     if !os(windows)
         Build-depends: unix == 2.*
