@@ -85,7 +85,7 @@ listener handle input =
         raw <- recvData' handle
         let packet = decode (B.concat $ LB.toChunks raw)
         case packet of
-             Left e -> error $ "Can't decode packet from Tunnel" ++ e
+             Left e -> error $ "Can't decode packet from tunnel: " ++ e
              Right p -> atomically $ writeTChan input p
 
 -- | Handle a connection by starting the 'listener', waiting for values
