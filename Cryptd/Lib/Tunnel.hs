@@ -18,8 +18,7 @@ import Control.Concurrent (forkIO, ThreadId)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar (TVar, readTVar, writeTVar, newTVarIO)
 import Control.Concurrent.STM.TChan (TChan, readTChan, writeTChan, newTChanIO)
-import Network.TLS (TLSCtx, recvData', sendData)
-import qualified Data.ByteString.Char8 as B
+import Network.TLS (TLSCtx, recvData, sendData)
 import qualified Data.ByteString.Lazy.Char8 as LB
 
 import Cryptd.Lib.HTTPSerial
@@ -80,13 +79,15 @@ updateTVar dest fun =
 -- | Function that forks itself into the background and just receives data
 -- sending it into the given 'TChan Channel'.
 listener :: TunnelHandle -> TChan Channel -> IO ThreadId
-listener handle input =
-    forkIO $ forever $ do
-        raw <- recvData' handle
-        let packet = decode (B.concat $ LB.toChunks raw)
-        case packet of
-             Left e -> error $ "Can't decode packet from tunnel: " ++ e
-             Right p -> atomically $ writeTChan input p
+listener handle input = forkIO . forever $
+    atomically . writeTChan input =<< getChunks (runGetPartial get)
+  where
+    getChunks getter = do
+        raw <- recvData handle
+        case getter raw of
+             Fail e -> error $ "Can't decode packet from tunnel: " ++ e
+             Partial g -> getChunks g
+             Done result _ -> return result
 
 -- | Handle a connection by starting the 'listener', waiting for values
 -- coming from 'outChannel' and pushing them into the connection.
