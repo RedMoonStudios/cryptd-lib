@@ -23,9 +23,12 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 
 import Cryptd.Lib.HTTPSerial
 
+-- | An identifier for distinguishing the current connection.
+type Sequence = Integer
+
 -- | A datatype representing the protocol inside the tunnel.
-data Channel = ChannelRequest FullRequest -- ^ HTTP request from tunnel
-             | ChannelResponse Response -- ^ HTTP response to tunnel
+data Channel = ChannelRequest Sequence FullRequest -- ^ HTTP request from tunnel
+             | ChannelResponse Sequence Response -- ^ HTTP response to tunnel
              | ChannelKeepalive -- ^ Keepalive packet
 
 $(derive makeSerialize ''Channel)
@@ -47,6 +50,7 @@ data TunnelState = TunnelState
     { inChannel :: TChan Channel -- ^ Data coming from tunnel
     , outChannel :: TChan Channel -- ^ Data going to tunnel
     , tunnelStatus :: TVar TunnelStatus
+    , tunnelSeq :: TVar Sequence -- ^ Current sequence number
     }
 
 -- | Various callback functions for the tunnel handler.
@@ -114,7 +118,8 @@ initializeState = do
     inChan <- newTChanIO
     outChan <- newTChanIO
     tstatus <- newTVarIO Down
-    return $ TunnelState inChan outChan tstatus
+    tseq <- newTVarIO 0
+    return $ TunnelState inChan outChan tstatus tseq
 
 -- | Create a new tunnel handler function using the given 'HandlerCallbacks'.
 makeHandler :: HandlerCallbacks -> IO (TunnelState, TunnelHandle -> IO ())

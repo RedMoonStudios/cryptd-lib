@@ -25,16 +25,16 @@ requestLoop :: String
             -> TunnelState
             -> IO ()
 requestLoop url _ ts = forever . withManager $ \mgr -> liftIO $ do
-    (fullReq, tstatus) <- atomically $ do
+    (fullReq, tstatus, tseq) <- atomically $ do
         val <- readTChan (inChannel ts)
         case val of
-             ChannelRequest r -> do
+             ChannelRequest tseq r -> do
                  tstatus <- readTVar (tunnelStatus ts)
-                 return (r, tstatus)
+                 return (r, tstatus, tseq)
              _ -> retry
     req <- supplyRequest fullReq
     resp <- request mgr url $ transformRequest req tstatus
-    atomically $ writeTChan (outChannel ts) (ChannelResponse resp)
+    atomically $ writeTChan (outChannel ts) (ChannelResponse tseq resp)
   where
     transformRequest req (Active (Just pid)) =
         req { requestHeaders = newHeaders }
