@@ -2,12 +2,13 @@
 -- | Perform HTTP requests.
 module Cryptd.Lib.HTTP (request, HC.withManager) where
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, nubBy)
 import Data.Function (on)
 import Data.Conduit (runResourceT, ($$))
 import Data.Conduit.List (consume)
 import Control.Monad.Trans (liftIO)
 import Network.Wai (Request(..), Response(..), responseLBS)
+import Network.HTTP.Types (RequestHeaders)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Network.HTTP.Conduit as HC
@@ -41,6 +42,13 @@ joinURL =
     trimL = dropWhile (== '/')
     trimR = reverse . trimL . reverse
 
+-- | Strip off and unify headers which are ambiguous for requests.
+stripHeaders :: RequestHeaders -> RequestHeaders
+stripHeaders = unify . filter (ambiguous . fst)
+  where unify = nubBy ((==) `on` fst)
+        ambiguous "Host"      = False
+        ambiguous _           = True
+
 -- | Perform a HTTP request using 'Request' and a base URL.
 request :: HC.Manager  -- ^ The manager for the conduit
         -> String      -- ^ The base URL
@@ -59,7 +67,7 @@ request manager rooturl req = runResourceT $ do
         return $ b { HC.method = requestMethod r
                    , HC.path = newpath
                    , HC.queryString = rawQueryString r
-                   , HC.requestHeaders = requestHeaders r
+                   , HC.requestHeaders = stripHeaders . requestHeaders $ r
                    , HC.requestBody = HC.RequestBodyLBS . LB.fromChunks $ body
                    , HC.checkStatus = \_ _ -> Nothing -- Allow non-2xx, too.
                    }
