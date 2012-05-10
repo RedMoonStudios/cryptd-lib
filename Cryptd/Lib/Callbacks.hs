@@ -13,7 +13,8 @@ import Data.ByteString.Char8 (pack)
 
 import Cryptd.Lib.HTTP (request, withManager)
 import Cryptd.Lib.HTTPSerial (supplyRequest)
-import Cryptd.Lib.Tunnel (TunnelHandle, TunnelState(..), TunnelStatus(..), Channel(..))
+import Cryptd.Lib.Tunnel ( TunnelHandle, TunnelIdentity(..), TunnelState(..)
+                         , TunnelStatus(..), Channel(..))
 
 -- | Default request loop callback for "Cryptd.Lib.Tunnel".
 --
@@ -36,11 +37,16 @@ requestLoop url _ ts = forever . withManager $ \mgr -> liftIO $ do
     resp <- request mgr url $ transformRequest req tstatus
     atomically $ writeTChan (outChannel ts) (ChannelResponse tseq resp)
   where
-    transformRequest req (Active (Just pid)) =
+    transformRequest req (Active tid@TunnelIdentity{idSlave = Just pid}) =
         req { requestHeaders = newHeaders }
       where
-        newHeaders = slaveId : filteredHeaders
+        newHeaders = (slaveId : filteredHeaders) ++ instances
         slaveId = (mk $ pack "X-SlaveID", pack pid)
+        instances =
+            case tid of
+                 TunnelIdentity{idInstance = Just inst} ->
+                     [(mk $ pack "X-Instance", pack inst)]
+                 _ -> []
         filteredHeaders = filter stripSlaveId $ requestHeaders req
         stripSlaveId ("X-SlaveID", _) = False
         stripSlaveId _                = True

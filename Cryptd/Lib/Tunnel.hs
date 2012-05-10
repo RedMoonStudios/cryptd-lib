@@ -2,6 +2,7 @@
 -- | Provides support for double-sided HTTP proxies.
 module Cryptd.Lib.Tunnel
     ( TunnelHandle
+    , TunnelIdentity(..)
     , TunnelStatus(..)
     , TunnelState(..)
     , Channel(..)
@@ -36,10 +37,16 @@ $(derive makeSerialize ''Channel)
 -- | A Handle for talking from/to the Tunnel.
 type TunnelHandle = TLSCtx Handle
 
+-- | The identifier for a particular connection
+data TunnelIdentity = TunnelIdentity
+    { idSlave :: Maybe String
+    , idInstance :: Maybe String
+    }
+
 -- | The status of the tunnel.
 data TunnelStatus
-    = Active (Maybe String)
-    -- ^ Tunnel is alive (with optional slave ID when used on master)
+    = Active TunnelIdentity
+    -- ^ Tunnel is alive (with optional slave/instance ID when used on master)
     | Shutdown
     -- ^ Tunnel is requested to shut down the connection
     | Down
@@ -62,6 +69,10 @@ data HandlerCallbacks = HandlerCallbacks
     , onLoop :: TunnelHandle -> TunnelState -> IO ()
     -- ^ Function that is 'forkIO'ed on every connection.
     }
+
+-- | Return not associated 'TunnelIdentity'.
+noIdentity :: TunnelIdentity
+noIdentity = TunnelIdentity Nothing Nothing
 
 -- | Return 'HandlerCallbacks' with all-noop functions.
 noCallbacks :: HandlerCallbacks
@@ -106,7 +117,7 @@ handler cb state handle = connectHandler $ finishSetDown $ do
         sendData handle toSend
   where
     setActive a@(Active _) = a
-    setActive _ = Active Nothing
+    setActive _ = Active noIdentity
 
     finishSetDown = flip (>>) $ atomically (writeTVar (tunnelStatus state) Down)
 
