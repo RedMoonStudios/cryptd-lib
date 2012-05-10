@@ -46,8 +46,10 @@ joinURL =
 stripHeaders :: RequestHeaders -> RequestHeaders
 stripHeaders = unify . filter (ambiguous . fst)
   where unify = nubBy ((==) `on` fst)
-        ambiguous "Host"      = False
-        ambiguous _           = True
+        ambiguous "Host"            = False
+        ambiguous "Content-Length"  = False
+        ambiguous "Accept-Encoding" = False
+        ambiguous _                 = True
 
 -- | Perform a HTTP request using 'Request' and a base URL.
 request :: HC.Manager  -- ^ The manager for the conduit
